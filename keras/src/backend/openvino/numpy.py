@@ -205,7 +205,7 @@ def all(x, axis=None, keepdims=False):
 
 
 def angle(x):
-    raise NotImplementedError("`angle` is not supported with openvino backend")
+    return arctan2(imag(x), real(x))
 
 
 def any(x, axis=None, keepdims=False):
@@ -1415,7 +1415,7 @@ def identity(n, dtype=None):
 
 
 def imag(x):
-    raise NotImplementedError("`imag` is not supported with openvino backend")
+    return zeros_like(x)
 
 
 def isclose(x1, x2, rtol=1e-5, atol=1e-8, equal_nan=False):
@@ -1530,7 +1530,7 @@ def _is_inf(x, pos=True):
 
 
 def isreal(x):
-    raise NotImplementedError("`isreal` is not supported with openvino backend")
+    return ones_like(x, dtype="bool")
 
 
 def kron(x1, x2):
@@ -2403,7 +2403,7 @@ def ravel(x):
 
 
 def real(x):
-    raise NotImplementedError("`real` is not supported with openvino backend")
+    return x
 
 
 def reciprocal(x):
