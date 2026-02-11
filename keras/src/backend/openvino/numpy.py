@@ -2500,9 +2500,27 @@ def sign(x):
 
 
 def signbit(x):
-    raise NotImplementedError(
-        "`signbit` is not supported with openvino backend"
-    )
+    x = get_ov_output(x)
+    x_type = x.get_element_type()
+
+    if x_type.is_integral() or x_type == Type.boolean:
+        zero = ov_opset.constant(0, x_type).output(0)
+        return OpenVINOKerasTensor(ov_opset.less(x, zero).output(0))
+
+    zero = ov_opset.constant(0.0, x_type).output(0)
+    one = ov_opset.constant(1.0, x_type).output(0)
+
+    is_neg = ov_opset.less(x, zero).output(0)
+    is_zero = ov_opset.equal(x, zero).output(0)
+
+    # 1/x
+    recip = ov_opset.divide(one, x).output(0)
+    recip_is_neg = ov_opset.less(recip, zero).output(0)
+
+    signbit_zero = ov_opset.logical_and(is_zero, recip_is_neg).output(0)
+    result = ov_opset.logical_or(is_neg, signbit_zero).output(0)
+
+    return OpenVINOKerasTensor(result)
 
 
 def sin(x):
