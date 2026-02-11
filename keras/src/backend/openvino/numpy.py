@@ -3262,6 +3262,19 @@ def trapezoid(y, x=None, dx=1.0, axis=-1):
     return OpenVINOKerasTensor(result)
 
 
+def unravel_index(indices, shape):
+    indices = get_ov_output(indices)
+    outputs = []
+    current_indices = indices
+    for dim in reversed(shape):
+        dim_const = ov_opset.constant(
+            dim, current_indices.get_element_type()
+        ).output(0)
+        outputs.append(ov_opset.floor_mod(current_indices, dim_const).output(0))
+        current_indices = ov_opset.divide(current_indices, dim_const).output(0)
+    return tuple(OpenVINOKerasTensor(out) for out in reversed(outputs))
+
+
 def vander(x, N=None, increasing=False):
     x = get_ov_output(x)
     x_type = x.get_element_type()
