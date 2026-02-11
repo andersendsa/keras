@@ -3855,6 +3855,15 @@ class NumpyTwoInputOpsCorrectnessTest(testing.TestCase):
 
 
 class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
+    def test_absolute(self):
+        x = np.array([-1, 2, -3], dtype="float32")
+        self.assertAllClose(knp.absolute(x), np.absolute(x))
+        self.assertAllClose(knp.Absolute()(x), np.absolute(x))
+
+    def test_abs(self):
+        x = np.array([-1, 2, -3], dtype="float32")
+        self.assertAllClose(knp.abs(x), np.abs(x))
+
     def test_mean(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(knp.mean(x), np.mean(x))
