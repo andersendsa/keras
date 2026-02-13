@@ -1705,7 +1705,32 @@ def kron(x1, x2):
 
 
 def lcm(x1, x2):
-    raise NotImplementedError("`lcm` is not supported with openvino backend")
+    x1 = get_ov_output(x1)
+    x2 = get_ov_output(x2)
+    x1, x2 = _align_operand_types(x1, x2, "lcm()")
+
+    x1_abs = ov_opset.abs(x1).output(0)
+    x2_abs = ov_opset.abs(x2).output(0)
+
+    # Compute GCD
+    # We pass the original aligned inputs to gcd.
+    # gcd will compute abs internally and broadcast.
+    gcd_val = gcd(x1, x2).output
+
+    # Handle division by zero when gcd is 0 (occurs if x1=0 and x2=0)
+    # LCM(0, 0) should be 0.
+    zero = ov_opset.constant(0, gcd_val.get_element_type()).output(0)
+    one = ov_opset.constant(1, gcd_val.get_element_type()).output(0)
+
+    is_zero = ov_opset.equal(gcd_val, zero).output(0)
+    safe_gcd = ov_opset.select(is_zero, one, gcd_val).output(0)
+
+    # Calculate LCM using (a / gcd) * b to avoid intermediate overflow
+    # Division is safe because gcd divides a exactly.
+    div_term = ov_opset.divide(x1_abs, safe_gcd).output(0)
+    lcm_val = ov_opset.multiply(div_term, x2_abs).output(0)
+
+    return OpenVINOKerasTensor(lcm_val)
 
 
 def ldexp(x1, x2):
