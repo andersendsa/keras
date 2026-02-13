@@ -126,6 +126,8 @@ def get_ov_output(x, ov_type=None):
         x = x.output
     elif isinstance(x, Tensor):
         x = ov_opset.constant(x.data).output(0)
+    elif isinstance(x, ov.Output):
+        pass
     else:
         raise ValueError(
             "unsupported type of `x` to create ov.Output: {}".format(type(x))
