@@ -16,6 +16,7 @@ from keras.src.backend.openvino.core import (
 from keras.src.backend.openvino.core import convert_to_tensor
 from keras.src.backend.openvino.core import get_ov_output
 from keras.src.backend.openvino.core import ov_to_keras_type
+from keras.src.backend.openvino.core import while_loop
 
 
 def add(x1, x2):
@@ -1327,7 +1328,52 @@ def full_like(x, fill_value, dtype=None):
 
 
 def gcd(x1, x2):
-    raise NotImplementedError("`gcd` is not supported with openvino backend")
+    element_type = None
+    if isinstance(x1, OpenVINOKerasTensor):
+        element_type = x1.output.get_element_type()
+    if isinstance(x2, OpenVINOKerasTensor):
+        element_type = x2.output.get_element_type()
+    x1 = get_ov_output(x1, element_type)
+    x2 = get_ov_output(x2, element_type)
+    x1, x2 = _align_operand_types(x1, x2, "gcd()")
+
+    x1_type = x1.get_element_type()
+    zero = ov_opset.constant(0, x1_type).output(0)
+    x1_b = ov_opset.add(x1, ov_opset.multiply(x2, zero)).output(0)
+    x2_b = ov_opset.add(x2, ov_opset.multiply(x1, zero)).output(0)
+
+    a = OpenVINOKerasTensor(ov_opset.abs(x1_b).output(0))
+    b = OpenVINOKerasTensor(ov_opset.abs(x2_b).output(0))
+
+    def cond(a, b):
+        zero_const = ov_opset.constant(0, b.output.get_element_type()).output(0)
+        not_zero = ov_opset.not_equal(b.output, zero_const).output(0)
+        flatten = ov_opset.constant([-1], Type.i32).output(0)
+        not_zero_flat = ov_opset.reshape(not_zero, flatten, False).output(0)
+        return ov_opset.reduce_logical_or(
+            not_zero_flat, ov_opset.constant(0, Type.i32).output(0)
+        ).output(0)
+
+    def body(a, b):
+        a_ov = a.output
+        b_ov = b.output
+
+        zero_const = ov_opset.constant(0, b_ov.get_element_type()).output(0)
+        mask = ov_opset.not_equal(b_ov, zero_const).output(0)
+
+        one_const = ov_opset.constant(1, b_ov.get_element_type()).output(0)
+        b_safe = ov_opset.select(mask, b_ov, one_const).output(0)
+
+        mod_res = ov_opset.mod(a_ov, b_safe).output(0)
+
+        a_new = ov_opset.select(mask, b_ov, a_ov).output(0)
+        b_new = ov_opset.select(mask, mod_res, b_ov).output(0)
+
+        return OpenVINOKerasTensor(a_new), OpenVINOKerasTensor(b_new)
+
+    results = while_loop(cond=cond, body=body, loop_vars=(a, b))
+
+    return results[0]
 
 
 def greater(x1, x2):
@@ -1597,7 +1643,37 @@ def kron(x1, x2):
 
 
 def lcm(x1, x2):
-    raise NotImplementedError("`lcm` is not supported with openvino backend")
+    element_type = None
+    if isinstance(x1, OpenVINOKerasTensor):
+        element_type = x1.output.get_element_type()
+    if isinstance(x2, OpenVINOKerasTensor):
+        element_type = x2.output.get_element_type()
+    x1_out = get_ov_output(x1, element_type)
+    x2_out = get_ov_output(x2, element_type)
+
+    x1_out, x2_out = _align_operand_types(x1_out, x2_out, "lcm()")
+    gcd_val = gcd(OpenVINOKerasTensor(x1_out), OpenVINOKerasTensor(x2_out))
+
+    zero = ov_opset.constant(0, x1_out.get_element_type()).output(0)
+    x1_b = ov_opset.add(x1_out, ov_opset.multiply(x2_out, zero)).output(0)
+    x2_b = ov_opset.add(x2_out, ov_opset.multiply(x1_out, zero)).output(0)
+
+    prod = ov_opset.multiply(x1_b, x2_b).output(0)
+    abs_prod = ov_opset.abs(prod).output(0)
+
+    gcd_ov = gcd_val.output
+
+    zero_const = ov_opset.constant(0, gcd_ov.get_element_type()).output(0)
+    one_const = ov_opset.constant(1, gcd_ov.get_element_type()).output(0)
+
+    is_zero = ov_opset.equal(gcd_ov, zero_const).output(0)
+    safe_gcd = ov_opset.select(is_zero, one_const, gcd_ov).output(0)
+
+    div = ov_opset.divide(abs_prod, safe_gcd).output(0)
+
+    result = ov_opset.select(is_zero, zero_const, div).output(0)
+
+    return OpenVINOKerasTensor(result)
 
 
 def ldexp(x1, x2):
