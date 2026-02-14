@@ -2602,6 +2602,50 @@ def roll(x, shift, axis=None):
     return OpenVINOKerasTensor(result)
 
 
+def searchsorted(sorted_sequence, values, side="left", sorter=None):
+    if sorter is not None:
+        raise NotImplementedError(
+            "`sorter` argument is not supported with openvino backend"
+        )
+    a = get_ov_output(sorted_sequence)
+    v = get_ov_output(values)
+
+    a_shape = a.get_partial_shape()
+    rank = a_shape.rank
+    if rank.is_static and rank.get_length() != 1:
+        raise ValueError(
+            "`searchsorted` only supports 1-D sorted sequences. "
+            "You can use `keras.ops.vectorized_map` "
+            "to extend it to N-D sequences. Received: "
+            f"sorted_sequence.shape={a_shape}"
+        )
+
+    if side == "left":
+        with_right_bound = True
+    elif side == "right":
+        with_right_bound = False
+    else:
+        raise ValueError(
+            f"Invalid value for side. Expected 'left' or 'right'. Received: {side}"
+        )
+
+    out_type = Type.i64
+    if a_shape[0].is_static:
+        length = a_shape[0].get_length()
+        if length <= np.iinfo(np.int32).max:
+            out_type = Type.i32
+
+    result = ov_opset.bucketize(
+        data=v,
+        buckets=a,
+        output_type=out_type,
+        with_right_bound=with_right_bound,
+    )
+    result = ov_opset.convert(result, out_type).output(0)
+
+    return OpenVINOKerasTensor(result)
+
+
 def sign(x):
     x = get_ov_output(x)
     return OpenVINOKerasTensor(ov_opset.sign(x).output(0))
