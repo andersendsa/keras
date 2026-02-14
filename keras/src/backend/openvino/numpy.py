@@ -1721,7 +1721,7 @@ def lcm(x1, x2):
     is_zero = ov_opset.equal(gcd_val, zero).output(0)
     safe_gcd = ov_opset.select(is_zero, one, gcd_val).output(0)
 
-    term1 = ov_opset.divide(x1_abs, safe_gcd).output(0)
+    term1 = ov_opset.divide(x1_abs, safe_gcd, pythondiv=True).output(0)
     result = ov_opset.multiply(term1, x2_abs).output(0)
 
     return OpenVINOKerasTensor(result)
