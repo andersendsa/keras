@@ -6,6 +6,7 @@ from keras.src.backend.config import floatx
 from keras.src.backend.openvino.core import OPENVINO_DTYPES
 from keras.src.backend.openvino.core import OpenVINOKerasTensor
 from keras.src.backend.openvino.core import convert_to_numpy
+from keras.src.backend.openvino import numpy as ov_numpy
 from keras.src.backend.openvino.core import get_ov_output
 from keras.src.random.seed_generator import SeedGenerator
 from keras.src.random.seed_generator import draw_seed
@@ -130,9 +131,43 @@ def dropout(inputs, rate, noise_shape=None, seed=None):
 
 
 def shuffle(x, axis=0, seed=None):
-    raise NotImplementedError(
-        "`shuffle` is not supported with openvino backend"
-    )
+    seed_tensor = draw_seed(seed)
+    if isinstance(seed_tensor, OpenVINOKerasTensor):
+        seed1, seed2 = convert_to_numpy(seed_tensor)
+    else:
+        seed1, seed2 = seed_tensor.data
+
+    x_ov = get_ov_output(x)
+    x_shape = x_ov.get_partial_shape()
+    rank = x_shape.rank.get_length()
+    if axis < 0:
+        axis += rank
+
+    shape_tensor = ov_opset.shape_of(x_ov, Type.i32).output(0)
+    dim_size = ov_opset.gather(
+        shape_tensor,
+        ov_opset.constant([axis], Type.i32).output(0),
+        ov_opset.constant(0, Type.i32).output(0),
+    ).output(0)
+
+    # Generate random uniform values for argsort
+    min_val = ov_opset.constant(0.0, Type.f32).output(0)
+    max_val = ov_opset.constant(1.0, Type.f32).output(0)
+
+    # Create shape for random values [dim_size]
+    rand_shape = ov_opset.reshape(
+        dim_size, ov_opset.constant([1], Type.i32).output(0), False
+    ).output(0)
+
+    rand_values = ov_opset.random_uniform(
+        rand_shape, min_val, max_val, Type.f32, seed1, seed2
+    ).output(0)
+
+    # Get permutation indices
+    indices = ov_numpy.argsort(OpenVINOKerasTensor(rand_values), axis=0)
+
+    # Shuffle x
+    return ov_numpy.take(x, indices, axis=axis)
 
 
 def gamma(shape, alpha, dtype=None, seed=None):
