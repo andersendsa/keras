@@ -519,7 +519,22 @@ def array(x, dtype=None):
 
 
 def view(x, dtype=None):
-    raise NotImplementedError("`view` is not supported with openvino backend")
+    x = get_ov_output(x)
+    old_ov_type = x.get_element_type()
+
+    if dtype is None:
+        new_ov_type = old_ov_type
+    else:
+        new_dtype = standardize_dtype(dtype)
+        new_ov_type = OPENVINO_DTYPES[new_dtype]
+
+    if old_ov_type == new_ov_type:
+        return OpenVINOKerasTensor(x)
+
+    raise NotImplementedError(
+        "`view` with different dtype is not supported with openvino backend "
+        "because `BitcastConvert` op is missing in the Python API."
+    )
 
 
 def average(x, axis=None, weights=None):
