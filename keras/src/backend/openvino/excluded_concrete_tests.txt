@@ -103,11 +103,6 @@ RandomCorrectnessTest::test_dropout_noise_shape
 RandomCorrectnessTest::test_gamma0
 RandomCorrectnessTest::test_gamma1
 RandomCorrectnessTest::test_gamma2
-RandomCorrectnessTest::test_randint0
-RandomCorrectnessTest::test_randint1
-RandomCorrectnessTest::test_randint2
-RandomCorrectnessTest::test_randint3
-RandomCorrectnessTest::test_randint4
 RandomCorrectnessTest::test_truncated_normal0
 RandomCorrectnessTest::test_truncated_normal1
 RandomCorrectnessTest::test_truncated_normal2
@@ -137,13 +132,6 @@ RandomDTypeTest::test_gamma_float16
 RandomDTypeTest::test_gamma_float32
 RandomDTypeTest::test_gamma_float64
 RandomDTypeTest::test_normal_bfloat16
-RandomDTypeTest::test_randint_int16
-RandomDTypeTest::test_randint_int32
-RandomDTypeTest::test_randint_int64
-RandomDTypeTest::test_randint_int8
-RandomDTypeTest::test_randint_uint16
-RandomDTypeTest::test_randint_uint32
-RandomDTypeTest::test_randint_uint8
 RandomDTypeTest::test_truncated_normal_bfloat16
 RandomDTypeTest::test_uniform_bfloat16
 SegmentSumTest::test_segment_sum_call
