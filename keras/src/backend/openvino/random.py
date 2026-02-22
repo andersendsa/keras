@@ -188,6 +188,7 @@ def shuffle(x, axis=0, seed=None):
     indices = ov_numpy.argsort(OpenVINOKerasTensor(rand_values), axis=0)
     return ov_numpy.take(x, indices, axis=axis)
 
+
 def _const(val, dtype):
     if dtype == Type.bf16:
         return ov_opset.convert(
@@ -202,19 +203,20 @@ def _random_normal(shape, dtype, seed1, seed2):
     two_pi = _const(2 * np.pi, dtype)
     minus_two = _const(-2.0, dtype)
     epsilon = _const(1e-7, dtype)
-    u1 = ov_opset.random_uniform(
-        shape, zero, one, dtype, seed1, seed2
-    ).output(0)
+    u1 = ov_opset.random_uniform(shape, zero, one, dtype, seed1, seed2).output(
+        0
+    )
     u2 = ov_opset.random_uniform(
         shape, zero, one, dtype, seed1 + 123, seed2
     ).output(0)
     u1 = ov_opset.add(u1, epsilon).output(0)
-    mag = ov_opset.sqrt(
-        ov_opset.multiply(minus_two, ov_opset.log(u1))
-    ).output(0)
+    mag = ov_opset.sqrt(ov_opset.multiply(minus_two, ov_opset.log(u1))).output(
+        0
+    )
     angle = ov_opset.multiply(two_pi, u2).output(0)
     z0 = ov_opset.multiply(mag, ov_opset.cos(angle)).output(0)
     return z0
+
 
 def gamma(shape, alpha, dtype=None, seed=None):
     dtype = dtype or floatx()
