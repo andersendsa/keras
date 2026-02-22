@@ -197,21 +197,17 @@ def _const(val, dtype):
 
 
 def _random_normal(shape, dtype, seed1, seed2):
-    # seed1, seed2 are Python ints here
     zero = _const(0.0, dtype)
     one = _const(1.0, dtype)
     two_pi = _const(2 * np.pi, dtype)
     minus_two = _const(-2.0, dtype)
     epsilon = _const(1e-7, dtype)
-
     u1 = ov_opset.random_uniform(
         shape, zero, one, dtype, seed1, seed2
     ).output(0)
-    # Decorrelate u2 seed
     u2 = ov_opset.random_uniform(
         shape, zero, one, dtype, seed1 + 123, seed2
     ).output(0)
-
     u1 = ov_opset.add(u1, epsilon).output(0)
     mag = ov_opset.sqrt(
         ov_opset.multiply(minus_two, ov_opset.log(u1))
