@@ -96,9 +96,6 @@ RandomCorrectnessTest::test_binomial1
 RandomCorrectnessTest::test_binomial2
 RandomCorrectnessTest::test_dropout
 RandomCorrectnessTest::test_dropout_noise_shape
-RandomCorrectnessTest::test_gamma0
-RandomCorrectnessTest::test_gamma1
-RandomCorrectnessTest::test_gamma2
 RandomCorrectnessTest::test_truncated_normal0
 RandomCorrectnessTest::test_truncated_normal1
 RandomCorrectnessTest::test_truncated_normal2
@@ -123,10 +120,6 @@ RandomDTypeTest::test_dropout_bfloat16
 RandomDTypeTest::test_dropout_float16
 RandomDTypeTest::test_dropout_float32
 RandomDTypeTest::test_dropout_float64
-RandomDTypeTest::test_gamma_bfloat16
-RandomDTypeTest::test_gamma_float16
-RandomDTypeTest::test_gamma_float32
-RandomDTypeTest::test_gamma_float64
 RandomDTypeTest::test_normal_bfloat16
 RandomDTypeTest::test_randint_int16
 RandomDTypeTest::test_randint_int32
