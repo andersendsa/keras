@@ -246,6 +246,5 @@ def binomial(shape, counts, probabilities, dtype=None, seed=None):
     return OpenVINOKerasTensor(res)
 
 
-
 def beta(shape, alpha, beta, dtype=None, seed=None):
     raise NotImplementedError("`beta` is not supported with openvino backend")
