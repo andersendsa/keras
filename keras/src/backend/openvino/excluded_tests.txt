@@ -23,7 +23,6 @@ keras/src/layers/reshaping/zero_padding1d_test.py
 keras/src/layers/reshaping/zero_padding2d_test.py
 keras/src/layers/reshaping/zero_padding3d_test.py
 keras/src/layers/layer_test.py
-keras/src/layers/rnn
 keras/src/legacy
 keras/src/losses
 keras/src/metrics
