@@ -358,8 +358,10 @@ def gru(
         ov_opset.constant(0, dtype=Type.i32).output(0),
     ).output(0)
     if mask is not None:
-        mask = get_ov_output(mask)
-        mask = ov_opset.convert(mask, Type.i32).output(0)
+        mask_ov = get_ov_output(mask)
+        if mask_ov.get_element_type() != Type.boolean:
+            mask_ov = ov_opset.convert(mask_ov, Type.boolean).output(0)
+        mask = ov_opset.convert(mask_ov, Type.i32).output(0)
         sequence_lengths = ov_opset.reduce_sum(
             mask,
             ov_opset.constant([-1], dtype=Type.i32).output(0),
@@ -382,7 +384,13 @@ def gru(
     recurrent_kernel_ov = ov_opset.unsqueeze(
         recurrent_kernel_t, ov_opset.constant([0], dtype=Type.i32).output(0)
     ).output(0)
+    bias = ov_opset.reshape(
+        bias, ov_opset.constant([-1], dtype=Type.i32).output(0), False
+    ).output(0)
     if reset_after:
+        bias = ov_opset.reshape(
+            bias, ov_opset.constant([2, -1], dtype=Type.i32).output(0), False
+        ).output(0)
         bias_W = ov_opset.gather(
             bias,
             ov_opset.constant(0, dtype=Type.i32).output(0),
@@ -390,7 +398,7 @@ def gru(
         ).output(0)
         bias_R = ov_opset.gather(
             bias,
-            ov_opset.constant(0, dtype=Type.i32).output(0),
+            ov_opset.constant(1, dtype=Type.i32).output(0),
             ov_opset.constant(0, dtype=Type.i32).output(0),
         ).output(0)
         shape_dim = ov_opset.shape_of(bias_W, Type.i32).output(0)
@@ -405,15 +413,18 @@ def gru(
         units_x2 = ov_opset.multiply(
             units, ov_opset.constant(2, dtype=Type.i32).output(0)
         ).output(0)
+        units_x2_1d = ov_opset.unsqueeze(
+            units_x2, ov_opset.constant([0], dtype=Type.i32).output(0)
+        ).output(0)
         Wb_zr = ov_opset.slice(
             bias_W,
             ov_opset.constant([0], dtype=Type.i32).output(0),
-            units_x2,
+            units_x2_1d,
             ov_opset.constant([1], dtype=Type.i32).output(0),
         ).output(0)
         Wb_h = ov_opset.slice(
             bias_W,
-            units_x2,
+            units_x2_1d,
             ov_opset.constant([2147483647], dtype=Type.i32).output(0),
             ov_opset.constant([1], dtype=Type.i32).output(0),
         ).output(0)
@@ -421,12 +432,12 @@ def gru(
         Rb_zr = ov_opset.slice(
             bias_R,
             ov_opset.constant([0], dtype=Type.i32).output(0),
-            units_x2,
+            units_x2_1d,
             ov_opset.constant([1], dtype=Type.i32).output(0),
         ).output(0)
         Rb_h = ov_opset.slice(
             bias_R,
-            units_x2,
+            units_x2_1d,
             ov_opset.constant([2147483647], dtype=Type.i32).output(0),
             ov_opset.constant([1], dtype=Type.i32).output(0),
         ).output(0)
