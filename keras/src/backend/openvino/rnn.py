@@ -385,12 +385,12 @@ def gru(
     if reset_after:
         bias_W = ov_opset.gather(
             bias,
-            ov_opset.constant([0], dtype=Type.i32).output(0),
+            ov_opset.constant(0, dtype=Type.i32).output(0),
             ov_opset.constant(0, dtype=Type.i32).output(0),
         ).output(0)
         bias_R = ov_opset.gather(
             bias,
-            ov_opset.constant([1], dtype=Type.i32).output(0),
+            ov_opset.constant(1, dtype=Type.i32).output(0),
             ov_opset.constant(0, dtype=Type.i32).output(0),
         ).output(0)
         shape_dim = ov_opset.shape_of(bias_W, Type.i32).output(0)
@@ -434,13 +434,8 @@ def gru(
         bias_ov = ov_opset.concat(
             [Wb_zr_plus_Rb_zr, Wb_h, Rb_h], axis=0
         ).output(0)
-        bias_ov = ov_opset.unsqueeze(
-            bias_ov, ov_opset.constant([0], dtype=Type.i32).output(0)
-        ).output(0)
     else:
-        bias_ov = ov_opset.unsqueeze(
-            bias, ov_opset.constant([0], dtype=Type.i32).output(0)
-        ).output(0)
+        bias_ov = bias
     units_int = recurrent_kernel.get_partial_shape()[0].get_length()
     direction = "reverse" if go_backwards else "forward"
     activation_name = _get_activation_name(activation)
