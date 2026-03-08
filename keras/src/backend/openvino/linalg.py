@@ -261,6 +261,12 @@ def svd(x, full_matrices=True, compute_uv=True):
     raise NotImplementedError("`svd` is not supported with openvino backend")
 
 
+def slogdet(x):
+    from keras.src.backend.openvino.numpy import slogdet as _slogdet
+
+    return _slogdet(x)
+
+
 def lstsq(a, b, rcond=None):
     raise NotImplementedError("`lstsq` is not supported with openvino backend")
 
