@@ -763,6 +763,8 @@ def istft(
 
 def rsqrt(x):
     x = get_ov_output(x)
+    if not x.get_element_type().is_real():
+        x = ov_opset.convert(x, Type.f32).output(0)
     const_one = ov_opset.constant(1, x.get_element_type()).output(0)
     sqrt = ov_opset.sqrt(x).output(0)
     return OpenVINOKerasTensor(ov_opset.divide(const_one, sqrt).output(0))
