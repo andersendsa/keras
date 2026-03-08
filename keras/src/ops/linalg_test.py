@@ -534,15 +534,23 @@ class LinalgOpsCorrectnessTest(testing.TestCase):
 
     def test_qr(self):
         x = np.random.random((4, 5))
-        q, r = linalg.qr(x, mode="reduced")
-        qref, rref = np.linalg.qr(x, mode="reduced")
-        self.assertAllClose(qref, q)
-        self.assertAllClose(rref, r)
+        for mode in ["reduced", "complete"]:
+            q, r = linalg.qr(x, mode=mode)
+            q_np = backend.convert_to_numpy(q)
+            r_np = backend.convert_to_numpy(r)
 
-        q, r = linalg.qr(x, mode="complete")
-        qref, rref = np.linalg.qr(x, mode="complete")
-        self.assertAllClose(qref, q)
-        self.assertAllClose(rref, r)
+            # QR decomposition is unique only up to the signs of the columns of Q and rows of R.
+            # Thus, we test the mathematical properties rather than exact equality with NumPy.
+            # 1. A = Q @ R
+            self.assertAllClose(x, np.matmul(q_np, r_np), atol=1e-5)
+
+            # 2. Q is orthogonal (Q^T @ Q = I)
+            qt_q = np.matmul(np.transpose(q_np, (1, 0)), q_np)
+            eye = np.eye(q_np.shape[1])
+            self.assertAllClose(eye, qt_q, atol=1e-5)
+
+            # 3. R is upper triangular
+            self.assertAllClose(np.tril(r_np, -1), np.zeros_like(r_np), atol=1e-5)
 
     def test_solve(self):
         x1 = np.array([[1, 2], [4, 5]], dtype="float32")
