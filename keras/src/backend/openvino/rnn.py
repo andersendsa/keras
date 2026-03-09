@@ -384,9 +384,6 @@ def gru(
     recurrent_kernel_ov = ov_opset.unsqueeze(
         recurrent_kernel_t, ov_opset.constant([0], dtype=Type.i32).output(0)
     ).output(0)
-    bias = ov_opset.reshape(
-        bias, ov_opset.constant([-1], dtype=Type.i32).output(0), False
-    ).output(0)
     if reset_after:
         bias_W = ov_opset.gather(
             bias,
