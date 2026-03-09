@@ -452,6 +452,7 @@ def gru(
         bias_ov = ov_opset.unsqueeze(
             bias, ov_opset.constant([0], dtype=Type.i32).output(0)
         ).output(0)
+
     units_int = recurrent_kernel.get_partial_shape()[0].get_length()
     direction = "reverse" if go_backwards else "forward"
     activation_name = _get_activation_name(activation)
