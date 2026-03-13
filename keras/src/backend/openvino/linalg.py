@@ -38,13 +38,12 @@ def det(a):
 
 
 def _jacobi_eigh(a_ov):
-    import numpy as np
     from openvino import Model
     from openvino import PartialShape
     from openvino import Type
+    from keras.src.backend.openvino.core import OpenVINOKerasTensor
     from keras.src.backend.openvino.numpy import sort, argsort
     from keras.src.backend.openvino.numpy import take_along_axis
-
     pshape = a_ov.get_partial_shape()
     if pshape.rank.is_dynamic:
         raise NotImplementedError("`eigh` requires a static rank.")
@@ -63,8 +62,20 @@ def _jacobi_eigh(a_ov):
 
     dtype = a_ov.get_element_type()
 
+    # Generate Identity Matrix symbolically
+    range_N = ov_opset.range(
+        ov_opset.constant(0, Type.i32),
+        ov_opset.constant(N, Type.i32),
+        ov_opset.constant(1, Type.i32),
+        Type.i32,
+    ).output(0)
+    range_N_row = ov_opset.unsqueeze(range_N, ov_opset.constant([1], Type.i32)).output(0)
+    range_N_col = ov_opset.unsqueeze(range_N, ov_opset.constant([0], Type.i32)).output(0)
+    eye_bool = ov_opset.equal(range_N_row, range_N_col).output(0)
+    eye_ov = ov_opset.convert(eye_bool, dtype).output(0)
+
     V_ov = ov_opset.broadcast(
-        ov_opset.constant(np.eye(N, dtype=np.float32), dtype),
+        eye_ov,
         ov_opset.shape_of(a_ov),
     ).output(0)
 
@@ -210,7 +221,7 @@ def _jacobi_eigh(a_ov):
     out_V = loop.get_iter_value(V_b, -1)
 
     I = ov_opset.broadcast(
-        ov_opset.constant(np.eye(N, dtype=np.float32), dtype),
+        eye_ov,
         ov_opset.shape_of(out_A),
     ).output(0)
     W = ov_opset.reduce_sum(
