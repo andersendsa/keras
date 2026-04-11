@@ -13,6 +13,11 @@ from keras.src.saving import object_registration
 from keras.src.saving import serialization_lib
 
 
+# TODO: more thorough testing. Correctness depends
+# on exact weight ordering for each layer, so we need
+# to test across all types of layers.
+
+
 
 try:
     import tf_keras
