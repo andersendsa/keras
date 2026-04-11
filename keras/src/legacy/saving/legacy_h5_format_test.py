@@ -12,9 +12,7 @@ from keras.src.legacy.saving import legacy_h5_format
 from keras.src.saving import object_registration
 from keras.src.saving import serialization_lib
 
-# TODO: more thorough testing. Correctness depends
-# on exact weight ordering for each layer, so we need
-# to test across all types of layers.
+
 
 try:
     import tf_keras
@@ -75,6 +73,52 @@ def get_subclassed_model(keras):
     model(np.random.random((2, 3)))
     return model
 
+def get_conv_model(keras):
+    return keras.Sequential(
+        [
+            keras.layers.Input((8, 8, 3), batch_size=2),
+            keras.layers.Conv2D(4, 3, padding="same"),
+            keras.layers.BatchNormalization(),
+            keras.layers.SeparableConv2D(4, 3, padding="same"),
+            keras.layers.DepthwiseConv2D(3, padding="same"),
+            keras.layers.GlobalAveragePooling2D(),
+            keras.layers.Dense(5, activation="softmax"),
+        ]
+    )
+
+
+def get_rnn_model(keras):
+    return keras.Sequential(
+        [
+            keras.layers.Input((4, 8), batch_size=2),
+            keras.layers.SimpleRNN(4, return_sequences=True),
+            keras.layers.GRU(4, return_sequences=True),
+            keras.layers.LSTM(4),
+            keras.layers.Dense(5, activation="softmax"),
+        ]
+    )
+
+
+def get_bidirectional_rnn_model(keras):
+    return keras.Sequential(
+        [
+            keras.layers.Input((4, 8), batch_size=2),
+            keras.layers.Bidirectional(keras.layers.LSTM(4)),
+            keras.layers.Dense(5, activation="softmax"),
+        ]
+    )
+
+
+def get_embedding_model(keras):
+    return keras.Sequential(
+        [
+            keras.layers.Input((10,), batch_size=2, dtype="int32"),
+            keras.layers.Embedding(10, 8),
+            keras.layers.LayerNormalization(),
+            keras.layers.GlobalAveragePooling1D(),
+            keras.layers.Dense(5, activation="softmax"),
+        ]
+    )
 
 @pytest.mark.requires_trainable_backend
 @pytest.mark.skipif(tf_keras is None, reason="Test requires tf_keras")
@@ -110,6 +154,29 @@ class LegacyH5WeightsTest(testing.TestCase):
         tf_keras_model = get_subclassed_model(tf_keras)
         ref_input = np.random.random((2, 3))
         self._check_reloading_weights(ref_input, model, tf_keras_model)
+    def test_conv_model_weights(self):
+        model = get_conv_model(keras)
+        tf_keras_model = get_conv_model(tf_keras)
+        ref_input = np.random.random((2, 8, 8, 3))
+        self._check_reloading_weights(ref_input, model, tf_keras_model)
+
+    def test_rnn_model_weights(self):
+        model = get_rnn_model(keras)
+        tf_keras_model = get_rnn_model(tf_keras)
+        ref_input = np.random.random((2, 4, 8))
+        self._check_reloading_weights(ref_input, model, tf_keras_model)
+
+    def test_bidirectional_rnn_model_weights(self):
+        model = get_bidirectional_rnn_model(keras)
+        tf_keras_model = get_bidirectional_rnn_model(tf_keras)
+        ref_input = np.random.random((2, 4, 8))
+        self._check_reloading_weights(ref_input, model, tf_keras_model)
+
+    def test_embedding_model_weights(self):
+        model = get_embedding_model(keras)
+        tf_keras_model = get_embedding_model(tf_keras)
+        ref_input = np.random.randint(0, 10, size=(2, 10))
+        self._check_reloading_weights(ref_input, model, tf_keras_model)
 
 
 @pytest.mark.requires_trainable_backend
@@ -131,6 +198,26 @@ class LegacyH5WholeModelTest(testing.TestCase):
     def test_functional_model(self):
         model = get_functional_model(keras)
         ref_input = np.random.random((2, 3))
+        self._check_reloading_model(ref_input, model)
+    
+    def test_conv_model(self):
+        model = get_conv_model(keras)
+        ref_input = np.random.random((2, 8, 8, 3))
+        self._check_reloading_model(ref_input, model)
+
+    def test_rnn_model(self):
+        model = get_rnn_model(keras)
+        ref_input = np.random.random((2, 4, 8))
+        self._check_reloading_model(ref_input, model)
+
+    def test_bidirectional_rnn_model(self):
+        model = get_bidirectional_rnn_model(keras)
+        ref_input = np.random.random((2, 4, 8))
+        self._check_reloading_model(ref_input, model)
+
+    def test_embedding_model(self):
+        model = get_embedding_model(keras)
+        ref_input = np.random.randint(0, 10, size=(2, 10))
         self._check_reloading_model(ref_input, model)
 
     def test_compiled_model_with_various_layers(self):
@@ -316,7 +403,7 @@ class LegacyH5WholeModelTest(testing.TestCase):
         )
         legacy_h5_format.save_model_to_hdf5(model, temp_filepath)
         legacy_h5_format.load_model_from_hdf5(temp_filepath)
-
+    
 
 @pytest.mark.requires_trainable_backend
 @pytest.mark.skipif(tf_keras is None, reason="Test requires tf_keras")
@@ -340,6 +427,30 @@ class LegacyH5BackwardsCompatTest(testing.TestCase):
         tf_keras_model = get_functional_model(tf_keras)
         model = get_functional_model(keras)
         ref_input = np.random.random((2, 3))
+        self._check_reloading_model(ref_input, model, tf_keras_model)
+
+    def test_conv_model(self):
+        tf_keras_model = get_conv_model(tf_keras)
+        model = get_conv_model(keras)
+        ref_input = np.random.random((2, 8, 8, 3))
+        self._check_reloading_model(ref_input, model, tf_keras_model)
+
+    def test_rnn_model(self):
+        tf_keras_model = get_rnn_model(tf_keras)
+        model = get_rnn_model(keras)
+        ref_input = np.random.random((2, 4, 8))
+        self._check_reloading_model(ref_input, model, tf_keras_model)
+
+    def test_bidirectional_rnn_model(self):
+        tf_keras_model = get_bidirectional_rnn_model(tf_keras)
+        model = get_bidirectional_rnn_model(keras)
+        ref_input = np.random.random((2, 4, 8))
+        self._check_reloading_model(ref_input, model, tf_keras_model)
+
+    def test_embedding_model(self):
+        tf_keras_model = get_embedding_model(tf_keras)
+        model = get_embedding_model(keras)
+        ref_input = np.random.randint(0, 10, size=(2, 10))
         self._check_reloading_model(ref_input, model, tf_keras_model)
 
     def test_compiled_model_with_various_layers(self):
