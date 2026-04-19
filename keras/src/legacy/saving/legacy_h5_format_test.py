@@ -129,6 +129,8 @@ def get_embedding_model(keras):
 @pytest.mark.skipif(tf_keras is None, reason="Test requires tf_keras")
 class LegacyH5WeightsTest(testing.TestCase):
     def _check_reloading_weights(self, ref_input, model, tf_keras_model):
+        _ = model(ref_input)
+        _ = tf_keras_model(ref_input)
         ref_output = tf_keras_model(ref_input)
         initial_weights = model.get_weights()
         # Check weights only file

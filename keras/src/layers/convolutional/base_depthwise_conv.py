@@ -271,3 +271,8 @@ class BaseDepthwiseConv(Layer):
             }
         )
         return config
+    
+    @classmethod
+    def from_config(cls, config):
+        config.pop("groups", None)
+        return super().from_config(config)

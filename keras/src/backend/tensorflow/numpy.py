@@ -119,14 +119,17 @@ def add(x1, x2):
         # `x2` non-squeezable dimension match `x1` channel dimension
         and x2_squeeze_shape[0]
         in {x1.shape.as_list()[1], x1.shape.as_list()[-1]}
-    ):
-        if x1.shape[-1] == x2_squeeze_shape[0]:
-            data_format = "NHWC"
-        else:
-            data_format = "NCHW"
+    ):  
         if len(x2.shape) > 1:
             x2 = tf.squeeze(x2)
-        return tf.nn.bias_add(x1, x2, data_format=data_format)
+        if len(x1.shape) >= 3:
+            if x1.shape[-1] == x2_squeeze_shape[0]:
+                data_format = "NHWC"
+            else:
+                data_format = "NCHW"
+            return tf.nn.bias_add(x1, x2, data_format=data_format)
+        else :
+            return tf.nn.bias_add(x1, x2)
 
     return tf.add(x1, x2)
 

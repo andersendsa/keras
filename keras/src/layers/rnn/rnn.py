@@ -491,6 +491,7 @@ class RNN(Layer):
 
     @classmethod
     def from_config(cls, config, custom_objects=None):
+        config.pop("time_major", None)
         cell = serialization_lib.deserialize_keras_object(
             config.pop("cell"), custom_objects=custom_objects
         )

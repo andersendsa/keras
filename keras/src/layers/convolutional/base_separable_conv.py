@@ -292,3 +292,11 @@ class BaseSeparableConv(Layer):
             }
         )
         return config
+    
+    @classmethod
+    def from_config(cls, config):
+        config.pop("groups", None)
+        config.pop("kernel_initializer", None)
+        config.pop("kernel_regularizer", None)
+        config.pop("kernel_constraint", None)
+        return super().from_config(config)

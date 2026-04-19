@@ -707,4 +707,5 @@ class GRU(RNN):
 
     @classmethod
     def from_config(cls, config):
+        config.pop("time_major", None)
         return cls(**config)
