@@ -248,9 +248,12 @@ def bias_add(x, bias, data_format=None):
         )
 
     if len(bias_shape) == 1:
-        if data_format == "channels_first":
+        x_rank = ndim(x)
+        if data_format == "channels_first" and x_rank is not None and x_rank >= 3:
             return tf.nn.bias_add(x, bias, data_format="NCHW")
-        return tf.nn.bias_add(x, bias, data_format="NHWC")
+        if data_format == "channels_last" and x_rank is not None and x_rank >= 3:
+            return tf.nn.bias_add(x, bias, data_format="NHWC")
+        return tf.nn.bias_add(x, bias)
     if ndim(x) in (3, 4, 5):
         if data_format == "channels_first":
             bias_reshape_axis = (1, bias_shape[-1]) + bias_shape[:-1]
